@@ -1,11 +1,14 @@
 package scan
 
-import "github.com/lanzay/scan-server/models"
+import (
+	"context"
+	"github.com/lanzay/scan-server/models"
+)
 
 type ScanRepoI interface {
-	CreateJob(job models.Job) (*models.Job, error)
-	CloseJob(job models.Job) (*models.Job, error)
-	GetJobs() ([]models.Job, error)
-	GetBarcodesByJob(jobName string) ([]models.Barcode, error)
-	AddBarcode(jobName, barcode string, delta int) error
+	CreateJob(ctx context.Context, job models.Job) (*models.Job, error)
+	CloseJob(ctx context.Context, job models.Job) (*models.Job, error)
+	GetJobs(ctx context.Context) ([]models.Job, error)
+	GetBarcodesByJob(ctx context.Context, jobName string) ([]models.Barcode, error)
+	AddBarcode(ctx context.Context, jobName, barcode string, delta int) error
 }
