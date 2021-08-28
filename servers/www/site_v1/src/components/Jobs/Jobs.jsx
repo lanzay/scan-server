@@ -23,9 +23,10 @@ export default function Jobs() {
     }
 
     function newJob() {
-        api.newJob('qqq', 'comment 1').then(response => {
+        api.newJob(job.job_name, job.comment).then(response => {
             setJobs([response.data])
-        })
+            getJobs()
+        });
     }
 
     function onClickJob(e) {
