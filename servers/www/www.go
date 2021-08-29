@@ -20,11 +20,9 @@ func (xx *www) HandlerRegister(mux *http.ServeMux) {
 	log.Println("[I] ROUTER", "/")
 }
 
-func (x *www) handlerIndex(w http.ResponseWriter, r *http.Request) {
+func (xx *www) handlerIndex(w http.ResponseWriter, r *http.Request) {
 
-	//log.Println("[D] www", r.URL.Path)
-
-	statDir := "./www/site_v1/build"
+	statDir := "./servers/www/site_v1/build"
 	index := statDir + "/index.html"
 	//index := filepath.Join(statDir, "/index.html")
 
@@ -41,6 +39,7 @@ func (x *www) handlerIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (xx *www) handlerOk(w http.ResponseWriter, r *http.Request) {
+
 	log.Println("[D] req", r.URL)
 
 	//ctx := r.Context()
@@ -50,5 +49,5 @@ func (xx *www) handlerOk(w http.ResponseWriter, r *http.Request) {
 	rBody, _ := httputil.DumpRequest(r, true)
 	log.Println("[D] req Ok", string(rBody))
 
-	w.Write([]byte(`"status":"ok"`))
+	_, _ = w.Write([]byte(`"status":"ok"`))
 }
