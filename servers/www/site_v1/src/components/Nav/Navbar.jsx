@@ -6,7 +6,7 @@ export default function Navbar() {
         <>
             <nav className="navbar navbar-expand-lg navbar-light bg-light">
                 <div className="container-fluid">
-                    <a className="navbar-brand" href="/">SCAN</a>
+                    <a className="navbar-brand" href="/">SCAN-SERVER</a>
                     <button className="navbar-toggler" type="button" data-bs-toggle="collapse"
                             data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
                             aria-label="Toggle navigation">
@@ -18,10 +18,7 @@ export default function Navbar() {
                                 <NavLink className="nav-link" to="/jobs">Jobs</NavLink>
                             </li>
                             <li className="nav-item">
-                                <NavLink className="nav-link" to="/scan">Scan</NavLink>
-                            </li>
-                            <li className="nav-item">
-                                <NavLink className="nav-link disabled" aria-disabled="true" to="/">Disabled</NavLink>
+                                <NavLink className="nav-link disabled" to="/scan" aria-disabled="true">Scan</NavLink>
                             </li>
                         </ul>
                     </div>

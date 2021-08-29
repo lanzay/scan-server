@@ -5,12 +5,16 @@ import (
 	scan_repo_files "github.com/lanzay/scan-server/app/scan/repository"
 	scan_usecase "github.com/lanzay/scan-server/app/scan/usecase"
 	server_http "github.com/lanzay/scan-server/servers"
+	"github.com/lanzay/scan-server/servers/www"
 	"net/http"
 )
 
 func main() {
 
 	mux := http.NewServeMux()
+
+	w := www.New()
+	w.HandlerRegister(mux)
 
 	scanRepo := scan_repo_files.NewScanRepo("./data")
 	scanUC := scan_usecase.NewScanUseCase(scanRepo)

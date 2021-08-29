@@ -10,7 +10,7 @@ import (
 
 var (
 	dirTest = "./repo_test"
-	jobTest = models.Job{
+	jobTest = models.JobHeader{
 		ID:      "1111-2222-3333-4444",
 		Name:    "",
 		Comment: "",

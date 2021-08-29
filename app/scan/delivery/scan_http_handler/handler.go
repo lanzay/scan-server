@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 type handler struct {
@@ -18,60 +20,65 @@ func NewHttp(uc scan.ScanUseCaseI) *handler {
 	}
 }
 
-func (h *handler) ScanAny(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ScanBarcode(w http.ResponseWriter, r *http.Request) {
 
-	switch r.Method {
-	case http.MethodPost:
-		h.ScanPOST(w, r)
-	case http.MethodGet:
-		h.ScanGET(w, r)
-	case http.MethodDelete:
-		h.DelByJob(w, r)
+	//PUT  /api/v1.0/job/{id}/scan/{barcode}/{count}
+	//    0  1    2   3   4    5      6         7
+
+	var err error
+	req := &scanReq{}
+
+	paths := strings.Split(r.URL.Path, "/")
+	if len(paths) < 6 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
-}
+	req.JobId = paths[4]
+	req.Barcode = paths[6]
 
-func (h *handler) ScanPOST(w http.ResponseWriter, r *http.Request) {
-
-	body, _ := io.ReadAll(r.Body)
-	r.Body.Close()
-	var scanReq *scanReq
-	err := json.Unmarshal(body, &scanReq)
-	if err != nil {
-		panic(err)
+	req.Count = 1
+	if len(paths) < 7 {
+		req.Count, _ = strconv.Atoi(paths[7])
 	}
 
-	err = h.uc.ScanBarcode(r.Context(), scanReq.Job, scanReq.Barcode, 1)
+	job, err := h.uc.ScanBarcode(r.Context(), req.JobId, req.Barcode, req.Count)
 	if err != nil {
 		w.WriteHeader(http.StatusNotAcceptable)
 		log.Println("[E]", err)
 		return
 	}
-	// TODO RES
+
+	body, _ := json.MarshalIndent(job, "", "    ")
+	_, _ = w.Write(body)
 
 }
 
-func (h *handler) ScanGET(w http.ResponseWriter, r *http.Request) {
+func (h *handler) JobAny(w http.ResponseWriter, r *http.Request) {
 
-	job := r.FormValue("job")
-	scans, _ := h.uc.GetBarcodesByJob(r.Context(), job)
+	//POST /job/new {job_name, comment}
+	//GET  /job/{id}
+	//PUT  /job/{id}/scan/{barcode}/{count}
+	//GET  /job/{id}/close
 
-	res := scanRes{Job: job}
-	for _, scan := range scans {
-		res.Barcodes = append(res.Barcodes, scan.Barcode)
-	}
+	//  /api/v1.0/job/new
+	//  /api/v1.0/job/2021-08-28_22-40-50_9f9b2be4
+	//  /api/v1.0/job/2021-08-28_22-40-50_9f9b2be4/close
+	// 0  1    2   3   4                            5
 
-	body, _ := json.Marshal(res)
-	w.Write(body)
-
-}
-
-func (h *handler) JobsAny(w http.ResponseWriter, r *http.Request) {
+	paths := strings.Split(r.URL.Path, "/")
 
 	switch r.Method {
 	case http.MethodPost:
 		h.NewJob(w, r)
 	case http.MethodGet:
-		h.GetJobs(w, r)
+		if len(paths) == 6 && strings.EqualFold(paths[5], "close") {
+			h.CloseJob(w, r)
+			return
+		}
+		h.GetJob(w, r)
+
+	case http.MethodPut:
+		h.ScanBarcode(w, r)
 	}
 }
 
@@ -85,7 +92,7 @@ func (h *handler) NewJob(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	job, err := h.uc.StartJob(r.Context(), newJobReq.JobName, newJobReq.Comment)
+	job, err := h.uc.NewJob(r.Context(), newJobReq.JobName, newJobReq.Comment)
 	bodyRes, _ := json.Marshal(job)
 	_, _ = w.Write(bodyRes)
 }
@@ -97,8 +104,16 @@ func (h *handler) GetJobs(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(body)
 }
 
-func (h *handler) DelByJob(w http.ResponseWriter, r *http.Request) {
+func (h *handler) GetJob(w http.ResponseWriter, r *http.Request) {
 
-	job := r.FormValue("job")
-	_, _ = h.uc.EndJob(r.Context(), job)
+	jobId := strings.Split(r.URL.Path, "/")[4]
+	job, _ := h.uc.GetJob(r.Context(), jobId)
+	body, _ := json.Marshal(job)
+	_, _ = w.Write(body)
+}
+
+func (h *handler) CloseJob(w http.ResponseWriter, r *http.Request) {
+
+	job := strings.Split(r.URL.Path, "/")[4]
+	_, _ = h.uc.CloseJob(r.Context(), job)
 }

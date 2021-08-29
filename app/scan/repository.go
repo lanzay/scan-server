@@ -6,9 +6,9 @@ import (
 )
 
 type ScanRepoI interface {
-	CreateJob(ctx context.Context, job models.Job) (*models.Job, error)
-	CloseJob(ctx context.Context, job models.Job) (*models.Job, error)
-	GetJobs(ctx context.Context) ([]models.Job, error)
-	GetBarcodesByJob(ctx context.Context, jobName string) ([]models.Barcode, error)
-	AddBarcode(ctx context.Context, jobName, barcode string, delta int) error
+	CreateJob(ctx context.Context, job models.JobHeader) (*models.Job, error)
+	CloseJob(ctx context.Context, jobId string) (*models.Job, error)
+	GetJobs(ctx context.Context) ([]models.JobHeader, error)
+	GetJob(ctx context.Context, jobId string) (*models.Job, error)
+	AddBarcode(ctx context.Context, jobId, barcodeRaw, barcode string, delta int) (*models.Job, error)
 }

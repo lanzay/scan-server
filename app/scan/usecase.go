@@ -6,9 +6,9 @@ import (
 )
 
 type ScanUseCaseI interface {
-	StartJob(ctx context.Context, jobName string, comment string) (*models.Job, error) // 1. Создать Job
-	GetJobs(ctx context.Context) ([]models.Job, error)                                 // 2. Получить список Job
-	GetBarcodesByJob(ctx context.Context, jobName string) ([]models.Barcode, error)    // 3. Получить состав Job
-	EndJob(ctx context.Context, jobName string) (*models.Job, error)                   // 4. Удалять Job
-	ScanBarcode(ctx context.Context, jobName string, barcode string, delta int) error  // 5. Сканируем ШК - добавить/удалить
+	NewJob(ctx context.Context, jobName string, comment string) (*models.Job, error)               // 1. Создать JobHeader
+	GetJobs(ctx context.Context) ([]models.JobHeader, error)                                       // 2. Получить список JobHeader
+	GetJob(ctx context.Context, jobId string) (*models.Job, error)                                 // 3. Получить состав JobHeader
+	CloseJob(ctx context.Context, jobId string) (*models.Job, error)                               // 4. Удалять JobHeader
+	ScanBarcode(ctx context.Context, jobId string, barcode string, delta int) (*models.Job, error) // 5. Сканируем ШК - добавить/удалить
 }
