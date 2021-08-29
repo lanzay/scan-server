@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="scan-server" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="scan-server" />
+    <working_directory value="$PROJECT_DIR$" />
+    <kind value="DIRECTORY" />
+    <package value="github.com/lanzay/scan-server/cmd/scan-server" />
+    <directory value="$PROJECT_DIR$/cmd/scan-server" />
+    <filePath value="$PROJECT_DIR$/cmd/scan-server/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

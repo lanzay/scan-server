@@ -12,3 +12,13 @@ UseCase:
 1. При каждом сканировании фиксируется время сканирования
 2. Сканируется максимально полный ШК
 3. Сервер пробует получить данные по номенклатуре (возвращает асинхронно)
+
+
+
+GET  /jobs
+POST /job/new {job_name, comment}
+GET  /job/{id}
+PUT  /job/{id}/scan/{barcode}/{count}
+GET  /job/{id}/close
+
+GET  /barcode/{barcode}

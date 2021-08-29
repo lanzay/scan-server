@@ -16,7 +16,7 @@ var _ scan.ScanRepoI = &scanRepo{}
 
 type scanRepo struct {
 	dir      string
-	jobsOpen map[string][]models.Job // [JobName][]Jobs
+	jobsOpen map[string]models.Job // [JobId]Job
 
 }
 
@@ -34,7 +34,7 @@ func NewScanRepo(dir string) scan.ScanRepoI {
 
 	repo := &scanRepo{
 		dir:      dir,
-		jobsOpen: map[string][]models.Job{},
+		jobsOpen: map[string]models.Job{},
 	}
 	err = repo.loadJobsOpenOnly()
 
@@ -49,98 +49,102 @@ func (s scanRepo) loadJobsOpenOnly() error {
 		if fileName.IsDir() {
 			continue
 		}
-		fileName.Name()
+		//fileName.Name()
 
 		jobData, err := loadJobFromFile(s.dir, status, fileName.Name())
 		if err != nil {
 			log.Panicln("[E]", err)
 		}
-		s.jobsOpen[jobData.Job.Name] = append(s.jobsOpen[jobData.Job.Name], jobData.Job)
+		s.jobsOpen[jobData.ID] = *jobData
 	}
 	return err
 }
 
-func (s scanRepo) CreateJob(ctx context.Context, job models.Job) (*models.Job, error) {
+func (s scanRepo) CreateJob(ctx context.Context, jobHeader models.JobHeader) (*models.Job, error) {
 
-	uuid4, _ := uuid.NewUUID()
-	job.ID = uuid4.String()
-	jobData := jobDataStruct{
-		Job:      job,
-		Barcodes: nil,
+	jobHeader.ID = time.Now().In(MSK).Format("2006-01-02_15-04-05") + "_" + uuid.New().String()[:8]
+
+	//uuid4, _ := uuid.NewUUID()
+	//job.ID = uuid4.String()
+
+	job := models.Job{
+		JobHeader: jobHeader,
+		Barcodes:  nil,
 	}
-	err := SaveJob(s.dir, jobData)
 
-	s.jobsOpen[job.Name] = append(s.jobsOpen[job.Name], job)
+	err := SaveJob(s.dir, job)
+	s.jobsOpen[jobHeader.ID] = job
 
 	return &job, err
 }
 
-func (s scanRepo) CloseJob(ctx context.Context, job models.Job) (*models.Job, error) {
+func (s scanRepo) CloseJob(ctx context.Context, jobId string) (*models.Job, error) {
 
-	jobData, err := LoadJob(s.dir, job)
-	jobData.Job.EndAt = time.Now().In(MSK)
-	err = SaveJob(s.dir, *jobData)
+	job, err := LoadJobById(s.dir, jobId)
+	job.EndAt = time.Now().In(MSK)
+	err = SaveJob(s.dir, *job)
 
 	{ // index del
-		var jobsNew []models.Job
-		for _, jobOld := range s.jobsOpen[job.Name] {
-			if jobOld.ID == job.ID {
+		delete(s.jobsOpen, job.ID)
+	}
+
+	return job, err
+}
+
+func (s scanRepo) GetJobs(ctx context.Context) ([]models.JobHeader, error) {
+
+	var jobsHeader []models.JobHeader
+	for _, jobsOpen := range s.jobsOpen {
+		jobsHeader = append(jobsHeader, jobsOpen.JobHeader)
+
+	}
+	return jobsHeader, nil
+}
+
+func (s scanRepo) GetJob(ctx context.Context, jobId string) (*models.Job, error) {
+
+	job, ok := s.jobsOpen[jobId]
+	if !ok {
+		return nil, errors.New("Cannot open job: " + jobId)
+	}
+
+	return &job, nil
+}
+
+func (s scanRepo) AddBarcode(ctx context.Context, jobId, barcodeRaw, barcode string, delta int) (*models.Job, error) {
+
+	job, ok := s.jobsOpen[jobId]
+	if !ok {
+		return nil, errors.New("Cannot open job: " + jobId)
+	}
+
+	rec := models.Barcode{
+		BarcodeRaw: barcodeRaw,
+		Barcode:    barcode,
+		Count:      delta,
+		LastScanAt: time.Now().In(MSK),
+	}
+	job.BarcodesDetail = append(job.BarcodesDetail, rec)
+
+	skip := false
+	for i := range job.Barcodes {
+		if job.Barcodes[i].Barcode == barcode {
+			if len(barcode) == 31 {
+				skip = true
 				continue
 			}
-			jobsNew = append(jobsNew)
-		}
-		s.jobsOpen[job.Name] = jobsNew
-	}
-
-	return &jobData.Job, err
-}
-
-func (s scanRepo) GetJobs(ctx context.Context) ([]models.Job, error) {
-
-	jobs := []models.Job{}
-	for _, jobsOpen := range s.jobsOpen {
-		for _, job := range jobsOpen {
-			jobs = append(jobs, job)
+			job.Barcodes[i].Count += delta
+			job.Barcodes[i].LastScanAt = time.Now().In(MSK)
+			skip = true
 		}
 	}
-	return jobs, nil
-}
-
-func (s scanRepo) GetBarcodesByJob(ctx context.Context, jobName string) ([]models.Barcode, error) {
-
-	jobs, ok := s.jobsOpen[jobName]
-	if !ok {
-		return nil, errors.New("Cannot open job: " + jobName)
-	}
-	if len(jobs) != 1 {
-		return nil, errors.New("More then 1 open job by name: " + jobName)
+	if !skip {
+		rec.BarcodeRaw = ""
+		job.Barcodes = append(job.Barcodes, rec)
 	}
 
-	jobData, err := loadJobFromFile(s.dir, "open", getFileNameByJob(jobs[0]))
-	return jobData.Barcodes, err
-}
+	s.jobsOpen[jobId] = job
+	err := SaveJob(s.dir, job)
 
-func (s scanRepo) AddBarcode(ctx context.Context, jobName, barcode string, delta int) error {
-
-	jobs, ok := s.jobsOpen[jobName]
-	if !ok {
-		return errors.New("Cannot open job: " + jobName)
-	}
-	if len(jobs) != 1 {
-		return errors.New("More then 1 open job by name: " + jobName)
-	}
-
-	barcpdes, _ := s.GetBarcodesByJob(ctx, jobName)
-	barcpdes = append(barcpdes, models.Barcode{
-		Barcode: barcode,
-		Count:   delta,
-		ScanAt:  time.Now().In(MSK),
-	})
-
-	err := SaveJob(s.dir, jobDataStruct{
-		Job:      jobs[0],
-		Barcodes: barcpdes,
-	})
-
-	return err
+	return &job, err
 }

@@ -60,8 +60,11 @@ export default function JobList(props) {
         )
     })
 
-    return <div className="accordion accordion-flush" id="list-job">
-        {list}
+    return <div>
+        <h2>Job list (open)</h2>
+        <div className="accordion accordion-flush" id="list-job">
+            {list}
+        </div>
     </div>
 
 }

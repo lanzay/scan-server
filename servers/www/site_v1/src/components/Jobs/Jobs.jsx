@@ -1,72 +1,54 @@
 import React, {useEffect} from "react";
 import * as api from "../../api/api";
+import { useHistory } from "react-router-dom";
+import JobNew from "./JobNew";
 import JobList from "./JobList";
 
 export default function Jobs() {
 
+    const history = useHistory()
     const [jobs, setJobs] = React.useState([])
-    const [job, setJob] = React.useState({
-        job_name: "",
-        comment: "",
-    })
-
-    useEffect(() => {
-        api.getJobs(1).then(response => {
-            setJobs(response.data)
-        })
-    }, [])
 
     function getJobs() {
-        api.getJobs(1).then(response => {
+        api.getJobs().then(response => {
             setJobs(response.data)
         })
     }
 
-    function newJob() {
-        api.newJob(job.job_name, job.comment).then(response => {
-            setJobs([response.data])
-            getJobs()
-        });
-    }
+    useEffect(() => {
+        getJobs()
+    }, [])
 
     function onClickJob(e) {
-        // TODO global state
-        console.log("Click: " + e.target.id)
+        //console.log("Click: " + e.target.id)
     }
 
-    function onClickJobCloce(e) {
-        // TODO global state
-        console.log("Close: " + e.target.id)
+    function onClickJobClose(e) {
+        //console.log("Close: " + e.target.id)
+        api.closeJob(e.target.id).then(response => {
+            getJobs()
+        })
     }
+
     function onClickJobOpen(e) {
-        // TODO global state
-        console.log("Open: " + e.target.id)
+        //console.log("Open: " + e.target.id)
+        history.push('/job/' + e.target.id)
+    }
+
+    function createdJob(job_id) {
+        history.push('/job/' + job_id)
     }
 
     return (
         <div>
-            <h2>Jobs</h2>
-<hr/>
+            <h2>Job</h2>
+            <hr/>
 
-            <h4 >Новое задание</h4>
-            <div className="mb-3">
-                <label for="job_name" className="form-label">Название:</label>
-                <input id="job_name" type="text" className="form-control"
-                       value={job.job_name}
-                       onInput={(v) => setJob({...job, job_name: v.target.value})}/>
-                <label for="job_comment" className="form-label">Комментарий:</label>
-                <textarea id="job_comment" type="text" className="form-control"
-                       value={job.comment}
-                       onInput={(v) => setJob({...job, comment: v.target.value})}/>
-                <div className="d-grid gap-2 mt-3">
-                <button onClick={newJob} type="button" className="btn btn-primary">Создать</button>
-                </div>
-            </div>
+            <JobNew created={createdJob}/>
 
-            <h2>Job list (open)</h2>
             <JobList jobs={jobs}
                      onClickJob={onClickJob}
-                     onClickJobCloce={onClickJobCloce}
+                     onClickJobCloce={onClickJobClose}
                      onClickJobOpen={onClickJobOpen}
             />
         </div>

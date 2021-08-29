@@ -19,11 +19,10 @@ export default function App() {
                     <Jobs/>
                 </Route>
 
-                <Route path="/scan">
-                    <Scan/>
+                <Route path="/job/:job_id" component={Scan}>
                 </Route>
 
             </Router>
         </div>
-    );
+    )
 }
